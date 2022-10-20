@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WorkManagementTool.Models;
 
 namespace WorkManagementTool.Data
@@ -12,9 +8,9 @@ namespace WorkManagementTool.Data
         public WorkManagementToolContext(DbContextOptions<WorkManagementToolContext> options)
             : base(options) => Database.EnsureCreated();
 
-        public DbSet<WorkManagementTool.Models.Department> Departments { get; set; }
-        public DbSet<WorkManagementTool.Models.JobType> JobTypes { get; set; }
-        public DbSet<WorkManagementTool.Models.Journal> Journals { get; set; }  
-        public DbSet<WorkManagementTool.Models.WorkLocation> WorkLocation  { get; set; }   
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<JobType> JobTypes { get; set; }
+        public DbSet<Journal> Journal { get; set; }  
+        public DbSet<WorkLocation> WorkLocation  { get; set; }   
     }
 }

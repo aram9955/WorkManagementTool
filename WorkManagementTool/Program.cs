@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using WorkManagementTool.Data;
+
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<WorkManagementToolContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("WorkManagementToolContext") ?? throw new InvalidOperationException("Connection string 'WorkManagementToolContext' not found.")));

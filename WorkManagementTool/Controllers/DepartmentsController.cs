@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using WorkManagementTool.Data;
 using WorkManagementTool.Models;
 
@@ -40,22 +33,17 @@ namespace WorkManagementTool.Controllers
 
         [HttpGet("GetJobTypes")]
         public async Task<ActionResult<List<JobType>>> GetJobTypes(int departmentId)
-
         {
             var jobTypes = await _context.JobTypes.Where(x => x.DepartmentId == departmentId).ToListAsync();
-            if (jobTypes != null)
+            if (jobTypes?.Count > 0)
             {
                 return jobTypes;
             }
-            else
-            {
-                
-            }
-            return NotFound();
 
+            return NotFound();
         }
+
         [HttpGet("GetWorkLocations")]
         public async Task<List<WorkLocation>> GetWorkLocation() => await _context.WorkLocation.ToListAsync();
-
     }
 }
