@@ -3,24 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WorkManagementTool.Models
 {
-    public class Journal
+    public class AddRequestjob
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
         [MaxLength(16)]
         public string SerialNumber { get; set; }
         [DataType(DataType.Date)]
         public DateTime? JobDate { get; set; }
-        [ForeignKey("Department")]
-        [Required]
         public int DepartmentId { get; set; }
         [Required]
         public Guid UserId { get; set; }
-        [ForeignKey("WorkLocation")]
-        public int? WorkLocationId { get; set; }
-        [ForeignKey("JobType")]
-        [Required]
+        public int WorkLocationId { get; set; }
         public int JobTypeId { get; set; }
         [MaxLength(1024)]
         public string? Notes { get; set; }
@@ -34,5 +28,6 @@ namespace WorkManagementTool.Models
         [Required]
         [DataType(DataType.Date)]
         public DateTime ArchivedDate { get; set; }
+
     }
 }

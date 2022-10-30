@@ -27,6 +27,7 @@ namespace WorkManagementTool.Controllers
 
                 return Ok(department);
             }
+        
 
             return BadRequest("Department key is required."); 
         }
@@ -34,16 +35,26 @@ namespace WorkManagementTool.Controllers
         [HttpGet("GetJobTypes")]
         public async Task<ActionResult<List<JobType>>> GetJobTypes(int departmentId)
         {
-            var jobTypes = await _context.JobTypes.Where(x => x.DepartmentId == departmentId).ToListAsync();
-            if (jobTypes?.Count > 0)
+            try
             {
-                return jobTypes;
-            }
+                var jobTypes = await _context.JobTypes.Where(x => x.DepartmentId == departmentId).ToListAsync();
+                if (jobTypes?.Count > 0)
+                {
+                    return jobTypes;
+                }
 
-            return NotFound();
+                return NotFound();
+            }
+            catch
+            {
+                BadRequest();
+                throw;
+            }
+          
         }
 
         [HttpGet("GetWorkLocations")]
         public async Task<List<WorkLocation>> GetWorkLocation() => await _context.WorkLocation.ToListAsync();
+
     }
 }
