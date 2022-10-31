@@ -19,10 +19,28 @@ namespace WorkManagementTool.Controllers
         {
             try
             {
-                var query = _context.Journal.Where(x => x.DeletedDate.HasValue == model.Fillters.IsTrash &&
-                    (model.Fillters.DepartmentId.HasValue ? x.DepartmentId == model.Fillters.DepartmentId.Value : true) &&
-                    (!string.IsNullOrEmpty(model.Fillters.SerialNumber) ? x.SerialNumber == model.Fillters.SerialNumber : true));
-               
+                var query = _context.Journal.Where(x => x.DeletedDate.HasValue == model.Fillters.IsTrash);
+
+                if (model.Fillters.DepartmentId.HasValue)
+                {
+                    query = query.Where(x => x.DepartmentId == model.Fillters.DepartmentId.Value);
+                }
+
+                if (!string.IsNullOrEmpty(model.Fillters.SerialNumber))
+                {
+                    query = query.Where(x => x.SerialNumber == model.Fillters.SerialNumber);
+                }
+
+                if (model.Fillters.DeletedDate.HasValue) 
+                {
+                    query = query.Where(x => x.DeletedDate == model.Fillters.DeletedDate.Value);
+                }
+
+                if (model.Fillters.DeletedBy.HasValue)
+                {
+                    query = query.Where(x => x.DeletedBy == model.Fillters.DeletedBy.Value);
+                }
+
                 var count = await query.CountAsync();
 
                 var jobs = await query.OrderByDescending(x => x.Id)

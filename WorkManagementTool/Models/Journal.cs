@@ -34,5 +34,6 @@ namespace WorkManagementTool.Models
         [Required]
         [DataType(DataType.Date)]
         public DateTime ArchivedDate { get; set; }
+        public Guid? DeletedBy { get; set; }
     }
 }

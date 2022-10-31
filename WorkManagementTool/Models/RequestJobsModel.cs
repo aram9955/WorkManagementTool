@@ -14,6 +14,10 @@
         public int? DepartmentId { get; set; }
 
         public string SerialNumber { get; set; }
+
+        public Guid? DeletedBy { get; set; }
+
+        public DateTime? DeletedDate { get; set; }
     }
 
     public class Pagination
