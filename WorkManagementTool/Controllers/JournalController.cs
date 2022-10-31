@@ -1,113 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Newtonsoft.Json.Linq;
 using WorkManagementTool.Data;
 using WorkManagementTool.Models;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using static WorkManagementTool.Models.RequestJobModel;
 
 namespace WorkManagementTool.Controllers
 {
     public class JournalController : Controller
     {
         private readonly WorkManagementToolContext _context;
+
         public JournalController(WorkManagementToolContext context)
         {
             _context = context;
         }
 
-        [HttpGet("All")]
-        public async Task<ActionResult<List<Journal>>> GetJobs()
+        [HttpGet("GetJobs")]
+        public async Task<ActionResult<ResponceJobsModel>> GetJobs(RequestJobsModel model)
         {
             try
             {
-                var query = await _context.Journal.Where(x => x.DeletedDate == null).ToListAsync();
-                if (query != null)
+                var query = _context.Journal.Where(x => x.DeletedDate.HasValue == model.Fillters.IsTrash &&
+                    (model.Fillters.DepartmentId.HasValue ? x.DepartmentId == model.Fillters.DepartmentId.Value : true) &&
+                    (!string.IsNullOrEmpty(model.Fillters.SerialNumber) ? x.SerialNumber == model.Fillters.SerialNumber : true));
+               
+                var count = await query.CountAsync();
+
+                var jobs = await query.OrderByDescending(x => x.Id)
+                                       .Skip(model.Pagination.Limit * model.Pagination.Page)
+                                       .Take(model.Pagination.Limit)
+                                       .ToListAsync();
+
+                return new ResponceJobsModel
                 {
-                    return Ok(query);
-                }
-                else
-                {
-                    NotFound();
-                }
-            }
-            catch
-            {
-                BadRequest();
-                throw;
-            }
-            return NotFound();
-        }
-
-
-
-        [HttpGet("Search")]
-        public async Task<ActionResult<Journal>> GetJobBy(RequestJobModel requestJob)
-        {
-            try
-            {
-                if (!String.IsNullOrEmpty(requestJob.SerialNumber))
-                {
-                    var query = await _context.Journal.Where(x => x.DeletedDate == null).FirstOrDefaultAsync(x => x.SerialNumber == requestJob.SerialNumber);
-
-                    if (query == null)
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        return Ok(query);
-                    }
-                }
-            }
-            catch
-            {
-                BadRequest("");
-                throw;
-            }
-            return NotFound();
-        }
-
-
-
-        [HttpGet("JobByDepartment")]
-        public async Task<ActionResult<List<Journal>>> GetJobs(RequestByDepartment requestByDepartment, Pagination pagination)
-        {
-            try
-            {
-                if (requestByDepartment != null)
-                {
-
-                    var query = _context.Journal.Where(x => x.DepartmentId == requestByDepartment.Id).
-                       Skip(pagination.Page * pagination.Limit).Take(pagination.Limit).Where(x => x.DeletedDate == null);
-                    if (query != null)
-                    {
-                        return await _context.Journal.ToListAsync();
-                    }
-                    else
-                    {
-                        return BadRequest();
-                    }
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                    Count = count,
+                    Jobs = jobs
+                };
             }
             catch
             {
                 return BadRequest();
-                throw;
             }
         }
 
@@ -145,6 +76,7 @@ namespace WorkManagementTool.Controllers
                 throw;
             }
         }
+
         [HttpPut("Update")]
         public async Task<ActionResult> UpdateJob([FromQuery] AddRequestjob requestjob)
         {
@@ -183,50 +115,6 @@ namespace WorkManagementTool.Controllers
                 throw;
             }
 
-        }
-        [HttpGet("Trash")]
-        public async Task<ActionResult<List<Journal>>> GetTrash()
-        {
-            try
-            {
-                var query = _context.Journal.Where(x => x.DeletedDate != null).ToListAsync();
-                if (query != null)
-                {
-                    return Ok(await query);
-                }
-                else
-                {
-                    NotFound();
-                }
-            }
-            catch
-            {
-                BadRequest();
-                throw;
-            }
-            return NotFound();
-        }
-        [HttpGet("TrashDepartment")]
-        public async Task<ActionResult<List<Journal>>> GetDepartmentTrash(RequestByDepartment request)
-        {
-            try
-            {
-                var query = _context.Journal.Where(x => x.DeletedDate != null).Where(x =>x.DepartmentId == request.Id && x.UserId == request.DeletedBy).ToListAsync();
-                if (query != null)
-                {
-                    return Ok(await query);
-                }
-                else
-                {
-                    NotFound();
-                }
-            }
-            catch
-            {
-                BadRequest();
-                throw;
-            }
-            return NotFound();
         }
     }
 }
