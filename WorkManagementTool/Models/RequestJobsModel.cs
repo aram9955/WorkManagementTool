@@ -1,4 +1,7 @@
-﻿namespace WorkManagementTool.Models
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+
+namespace WorkManagementTool.Models
 {
     public class RequestJobsModel
     {
@@ -9,20 +12,28 @@
 
     public class JournalFillters
     {
-        public bool IsTrash { get; set; }
-
+        public  DateTime?  JobDate { get; set; }
         public int? DepartmentId { get; set; }
-
-        public string SerialNumber { get; set; }
-
+        public Guid? UserId { get; set; }
+        public int? WorkLocationId { get; set; }
+        public int? JobTypeId { get; set; }
+        [Required]
+        public bool IsTrash { get; set; }
+        public string? SerialNumber { get; set; }
         public Guid? DeletedBy { get; set; }
-
         public DateTime? DeletedDate { get; set; }
     }
+    
+
 
     public class Pagination
     {
-        public int Page { get; set; }
-        public int Limit { get; set; }
+        [Required]
+        [DefaultValue(1)]
+        public int? Page { get; set; } = 1;
+
+        [Required]
+        [DefaultValue(10)]
+        public int? Limit { get; set; } = 10;
     }
 }

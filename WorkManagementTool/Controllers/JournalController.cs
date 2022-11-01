@@ -31,7 +31,7 @@ namespace WorkManagementTool.Controllers
                     query = query.Where(x => x.SerialNumber == model.Fillters.SerialNumber);
                 }
 
-                if (model.Fillters.DeletedDate.HasValue) 
+                if (model.Fillters.DeletedDate.HasValue)
                 {
                     query = query.Where(x => x.DeletedDate == model.Fillters.DeletedDate.Value);
                 }
@@ -41,11 +41,27 @@ namespace WorkManagementTool.Controllers
                     query = query.Where(x => x.DeletedBy == model.Fillters.DeletedBy.Value);
                 }
 
+                if (model.Fillters.JobDate.HasValue)
+                {
+                    query = query.Where(x => x.JobDate == model.Fillters.JobDate.Value);
+                }
+
+                if (model.Fillters.WorkLocationId != null)
+                {
+                    query = query.Where(x => x.WorkLocationId == model.Fillters.WorkLocationId);
+                }
+
+                if (model.Fillters.JobTypeId != null)
+                {
+                    query = query.Where(x => x.JobTypeId == model.Fillters.JobTypeId);
+                }
+
+
                 var count = await query.CountAsync();
 
                 var jobs = await query.OrderByDescending(x => x.Id)
-                                       .Skip(model.Pagination.Limit * model.Pagination.Page)
-                                       .Take(model.Pagination.Limit)
+                                       .Skip(model.Pagination.Limit!.Value * (model.Pagination.Page!.Value - 1))
+                                       .Take(model.Pagination.Limit!.Value)
                                        .ToListAsync();
 
                 return new ResponceJobsModel
@@ -60,78 +76,103 @@ namespace WorkManagementTool.Controllers
             }
         }
 
-        [HttpPost("Add")]
-        public async Task<ActionResult> AddJob([FromQuery] AddRequestjob requestjob)
+        [HttpGet("Get/{id}")]
+        public async Task<ActionResult<Journal>> GetJob(int id)
+        {
+            var journal = await _context.Journal.FindAsync(id);
+
+            if (journal == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(journal);
+        }
+
+        [HttpPost("Create")]
+        public async Task<ActionResult<Journal>> AddJob(AddOrUpdateJobModel model)
         {
             try
             {
+                if (model == null) 
+                {
+                    return BadRequest();
+                }
+
                 var journalRow = new Journal()
                 {
-                    SerialNumber = requestjob.SerialNumber,
-                    UserId = requestjob.UserId,
-                    JobDate = requestjob.JobDate,
-                    WorkLocationId = requestjob.WorkLocationId,
-                    DepartmentId = requestjob.DepartmentId,
-                    JobTypeId = requestjob.JobTypeId,
-                    Notes = requestjob.Notes,
-                    CreateDate = requestjob.CreateDate,
-                    LastUpdateDate = requestjob.LastUpdateDate,
-                    ArchivedDate = requestjob.ArchivedDate,
-                    DeletedDate = requestjob.DeletedDate,
+                    SerialNumber = "2022-14", // to do
+                    
+                    UserId = model.UserId,
+                    DepartmentId = model.DepartmentId,
 
+                    JobDate = model.JobDate,
+                    WorkLocationId = model.WorkLocationId,
+                    JobTypeId = model.JobTypeId,
+                    Notes = model.Notes,
+
+                    CreateDate = DateTime.UtcNow,
+                    ArchivedDate = DateTime.UtcNow.AddDays(7) // move config
                 };
-                if (journalRow != null)
-                {
-                    await _context.Journal.AddAsync(journalRow);
-                    await _context.SaveChangesAsync();
-                    return Ok(await _context.Journal.ToListAsync());
-                }
-                return BadRequest();
+
+                await _context.Journal.AddAsync(journalRow);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetJob), new { id = journalRow.Id }, (journalRow));
             }
-            catch
+            catch (Exception ex)
             {
                 return BadRequest();
-                throw;
             }
         }
 
-        [HttpPut("Update")]
-        public async Task<ActionResult> UpdateJob([FromQuery] AddRequestjob requestjob)
+        [HttpPut("Update/{id}")]
+        public async Task<ActionResult<Journal>> PutJob(int id, AddOrUpdateJobModel model)
         {
-            try
+            if (model == null)
             {
-                var query = await _context.Journal.FindAsync(requestjob.Id);
-                if (query.ArchivedDate > DateTime.Now.AddDays(-7))
-                {
-                    return BadRequest();
-                }
-                if (query == null)
-                {
-                    return BadRequest();
-                }
-                else
-                {
-                    query.UserId = requestjob.UserId;
-                    query.JobDate = requestjob.JobDate;
-                    query.WorkLocationId = requestjob.WorkLocationId;
-                    query.DepartmentId = requestjob.DepartmentId;
-                    query.JobTypeId = requestjob.JobTypeId;
-                    query.Notes = requestjob.Notes;
-                    query.CreateDate = requestjob.CreateDate;
-                    query.LastUpdateDate = requestjob.LastUpdateDate;
-                    query.ArchivedDate = requestjob.ArchivedDate;
-                    query.DeletedDate = requestjob.DeletedDate;
-
-
-                    await _context.SaveChangesAsync();
-                    return Ok(await _context.Journal.ToListAsync());
-                }
+                return BadRequest();
             }
-            catch 
+
+            var journal = await _context.Journal.FindAsync(id);
+            if (journal == null)
             {
-                BadRequest();
-                throw;
+                return NotFound();
             }
+
+            journal.JobDate = model.JobDate;
+            journal.WorkLocationId = model.WorkLocationId;
+            journal.JobTypeId = model.JobTypeId;
+            journal.Notes = model.Notes;
+
+            journal.LastUpdateDate = DateTime.UtcNow;
+
+            _context.Journal.Update(journal);
+            await _context.SaveChangesAsync();
+
+            return Ok(journal);
+        }
+
+        [HttpDelete("Delete/{id}")]
+        public async Task<ActionResult<Journal>> DeletedJob(int id, DeleteJobModel model)
+        {
+            if (model == null)
+            {
+                return BadRequest();
+            }
+
+            var job = await _context.Journal.FindAsync(id); 
+            if (job == null)
+            {
+                return NotFound();
+            }
+
+            job.DeletedBy = model.DeletedBy;
+            job.DeletedDate = DateTime.UtcNow;
+
+            _context.Journal.Update(job);
+            await _context.SaveChangesAsync();
+
+            return Ok(job);
 
         }
     }
