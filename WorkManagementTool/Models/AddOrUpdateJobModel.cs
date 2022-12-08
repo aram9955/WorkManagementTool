@@ -12,11 +12,9 @@ namespace WorkManagementTool.Models
         [Required]
         public Guid UserId { get; set; }
 
-        [Required]
-        public int WorkLocationId { get; set; }
+        public int? WorkLocationId { get; set; }
 
-        [Required]
-        public int JobTypeId { get; set; }
+        public int? JobTypeId { get; set; }
 
         [MaxLength(1024)]
         public string? Notes { get; set; }

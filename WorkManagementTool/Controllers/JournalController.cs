@@ -1,17 +1,39 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using NuGet.Configuration;
+using System.Drawing;
+using System.Reflection.Metadata.Ecma335;
 using WorkManagementTool.Data;
 using WorkManagementTool.Models;
+using WorkManagementTool.Models.Configs;
 
 namespace WorkManagementTool.Controllers
 {
     public class JournalController : Controller
     {
         private readonly WorkManagementToolContext _context;
+        private readonly JournalConfigs _configs;
 
-        public JournalController(WorkManagementToolContext context)
+        public JournalController(WorkManagementToolContext context, IOptions<JournalConfigs> configs)
         {
             _context = context;
+            _configs = configs.Value;
+        }
+        private static readonly Dictionary<int, int> SerialNumber = new Dictionary<int, int>();
+      
+
+        public static string GetSerialNumber()
+        {
+            int year = DateTime.Today.Year;
+            int Id;
+
+            SerialNumber.TryGetValue(year, out Id);
+
+            Id++;
+            SerialNumber[year] = Id;
+
+            return $"{year}-{Id}";
         }
 
         [HttpGet("GetJobs")]
@@ -28,17 +50,12 @@ namespace WorkManagementTool.Controllers
 
                 if (!string.IsNullOrEmpty(model.Fillters.SerialNumber))
                 {
-                    query = query.Where(x => x.SerialNumber == model.Fillters.SerialNumber);
+                    query = query.Where(x => x.SerialNumber == model.Fillters.SerialNumber && model.Fillters.DepartmentId == x.DepartmentId);
                 }
 
                 if (model.Fillters.DeletedDate.HasValue)
                 {
                     query = query.Where(x => x.DeletedDate == model.Fillters.DeletedDate.Value);
-                }
-
-                if (model.Fillters.DeletedBy.HasValue)
-                {
-                    query = query.Where(x => x.DeletedBy == model.Fillters.DeletedBy.Value);
                 }
 
                 if (model.Fillters.JobDate.HasValue)
@@ -55,6 +72,17 @@ namespace WorkManagementTool.Controllers
                 {
                     query = query.Where(x => x.JobTypeId == model.Fillters.JobTypeId);
                 }
+
+                if (model.Fillters.StartDate.HasValue)
+                {
+                    query = query.Where(x => model.Fillters.StartDate <= x.CreateDate);
+                }
+                if (model.Fillters.EndDate.HasValue)
+                {
+                    query = query.Where(x => model.Fillters.EndDate >= x.CreateDate);
+                }
+
+
 
 
                 var count = await query.CountAsync();
@@ -75,7 +103,7 @@ namespace WorkManagementTool.Controllers
                 return BadRequest();
             }
         }
-
+        
         [HttpGet("Get/{id}")]
         public async Task<ActionResult<Journal>> GetJob(int id)
         {
@@ -94,15 +122,18 @@ namespace WorkManagementTool.Controllers
         {
             try
             {
-                if (model == null) 
+                if (model.JobDate == null
+                    && model.Notes == null
+                    && model.WorkLocationId == null
+                    && model.JobTypeId == null && model.UserId != null && model.DepartmentId != null)
                 {
                     return BadRequest();
                 }
 
                 var journalRow = new Journal()
                 {
-                    SerialNumber = "2022-14", // to do
-                    
+                    SerialNumber = GetSerialNumber(),
+
                     UserId = model.UserId,
                     DepartmentId = model.DepartmentId,
 
@@ -112,7 +143,7 @@ namespace WorkManagementTool.Controllers
                     Notes = model.Notes,
 
                     CreateDate = DateTime.UtcNow,
-                    ArchivedDate = DateTime.UtcNow.AddDays(7) // move config
+                    ArchivedDate = DateTime.UtcNow.AddDays(_configs.ArchivedDate)
                 };
 
                 await _context.Journal.AddAsync(journalRow);
@@ -128,16 +159,24 @@ namespace WorkManagementTool.Controllers
         [HttpPut("Update/{id}")]
         public async Task<ActionResult<Journal>> PutJob(int id, AddOrUpdateJobModel model)
         {
-            if (model == null)
+            if (model.JobDate == null
+               && model.Notes == null
+               && model.WorkLocationId == null
+               && model.JobTypeId == null && model.UserId != null && model.DepartmentId != null)
             {
                 return BadRequest();
             }
 
             var journal = await _context.Journal.FindAsync(id);
+            if (journal.DeletedDate.HasValue && journal.Id <= 0)
+            {
+                return BadRequest();
+            }
             if (journal == null)
             {
                 return NotFound();
             }
+
 
             journal.JobDate = model.JobDate;
             journal.WorkLocationId = model.WorkLocationId;
@@ -146,34 +185,51 @@ namespace WorkManagementTool.Controllers
 
             journal.LastUpdateDate = DateTime.UtcNow;
 
-            _context.Journal.Update(journal);
-            await _context.SaveChangesAsync();
-
-            return Ok(journal);
-        }
-
-        [HttpDelete("Delete/{id}")]
-        public async Task<ActionResult<Journal>> DeletedJob(int id, DeleteJobModel model)
-        {
-            if (model == null)
+            try
             {
-                return BadRequest();
-            }
+                await _context.SaveChangesAsync();
 
-            var job = await _context.Journal.FindAsync(id); 
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+
+                return NotFound();
+            }
+            
+            return NoContent();
+        }
+       
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Journal>> DeletedJob(int id)
+        {
+            var job = await _context.Journal.FindAsync(id);
             if (job == null)
             {
                 return NotFound();
             }
 
-            job.DeletedBy = model.DeletedBy;
             job.DeletedDate = DateTime.UtcNow;
 
-            _context.Journal.Update(job);
             await _context.SaveChangesAsync();
 
-            return Ok(job);
-
+            return NoContent();
         }
+
+        [HttpPut("Recover/{id}")]
+        public async Task<ActionResult<Journal>> RecoverJob(int id)
+        {
+            var job = await _context.Journal.FirstOrDefaultAsync(x => x.Id == id);
+            if (job == null)
+            {
+                return NotFound();
+            }
+
+            job.DeletedDate = null;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
     }
 }
