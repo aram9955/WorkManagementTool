@@ -12,7 +12,7 @@ namespace WorkManagementTool.Models
 
     public class JournalFillters
     {
-        public  DateTime?  JobDate { get; set; }
+        public DateTime?  JobDate { get; set; }
         public int? DepartmentId { get; set; }
         public Guid? UserId { get; set; }
         public int? WorkLocationId { get; set; }
@@ -20,8 +20,9 @@ namespace WorkManagementTool.Models
         [Required]
         public bool IsTrash { get; set; }
         public string? SerialNumber { get; set; }
-        public Guid? DeletedBy { get; set; }
         public DateTime? DeletedDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
     }
     
 
