@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using WorkManagementTool.Models;
 
 namespace WorkManagementTool.Data
 {
@@ -17,5 +16,6 @@ namespace WorkManagementTool.Data
         public DbSet<JobType> JobTypes { get; set; }
         public DbSet<Journal> Journal { get; set; }
         public DbSet<WorkLocation> WorkLocation { get; set; }
+        public DbSet<JournalAllHistory> JournalAllHistory { get; set; }
     }
 }

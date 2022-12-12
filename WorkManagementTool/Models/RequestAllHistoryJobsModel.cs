@@ -3,37 +3,29 @@ using System.ComponentModel.DataAnnotations;
 namespace WorkManagementTool.Models
 {
     /// <summary>
-    /// This Class <c> RequestJobsModel </c>For Fillter And Request parametrs
+    /// This Class <c> RequestAllHistoryJobsModel </c> For Fillter And Request parametrs
     /// </summary>
-    public class RequestJobsModel
+    public class RequestAllHistoryJobsModel
     {
-        public Pagination Pagination { get; set; } = new();
-        public JournalFillters Fillters { get; set; } = new();
+        public PaginationAllHistroy Pagination { get; set; } = new();
+        public JournalFilltersAllHistory Fillters { get; set; } = new();
     }
     /// <summary>
     /// Types of filtering
     /// </summary>
-    public class JournalFillters
+    public class JournalFilltersAllHistory
     {
-        public DateTime? JobDate { get; set; }
         [Range(1, 4, ErrorMessage = "Please enter valid Department")]
         public int? DepartmentId { get; set; }
         public Guid? UserId { get; set; }
-        [Range(1, 81, ErrorMessage = "Please enter valid WorkLocation")]
-        public int? WorkLocationId { get; set; }
-        [Range(1, 31, ErrorMessage = "Please enter valid JobType")]
-        public int? JobTypeId { get; set; }
-        [Required]
-        public bool IsTrash { get; set; }
         public string? SerialNumber { get; set; }
-        public DateTime? DeletedDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
     }
     /// <summary>
     /// Request to View 
     /// </summary>
-    public class Pagination
+    public class PaginationAllHistroy
     {
         /// <summary>
         /// Page Default = 1.
