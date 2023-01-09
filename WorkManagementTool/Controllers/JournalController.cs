@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WorkManagementTool.Data;
-using WorkManagementTool.Models;
 using Microsoft.Extensions.Options;
 using WorkManagementTool.Models.Configs;
+using WorkManagementTool.Models.JournalModels;
 
 namespace WorkManagementTool.Controllers
 {
@@ -34,21 +34,37 @@ namespace WorkManagementTool.Controllers
         /// <summary>
         /// Generation for SerialNumber . 
         /// </summary>
-        private static readonly Dictionary<int, int> SerialNumber = new Dictionary<int, int>();
+        //private static readonly Dictionary<int, int> SerialNumber = new Dictionary<int, int>();
 
         /// <summary>
         /// This Method <c> GetSerialNumber </c> For SerialNumber temporary Value.
         /// </summary>
         /// <returns> SerialNumber  </returns>
-        public static string GetSerialNumber()
+        public async Task<string> GetSerialNumber()
         {
-            int year = DateTime.Today.Year;
-            int Id;
-            SerialNumber.TryGetValue(year, out Id);
-            Id++;
-            SerialNumber[year] = Id;
-            return $"{year}-{Id}";
+            int number = 1;
+            string lastNumber = string.Empty;
+
+            var job = await _context.Journal.Where(x => x.SerialNumber != null).OrderByDescending(x => x.CreateDate).FirstOrDefaultAsync();
+            if (job != null)
+            {
+                lastNumber = job.SerialNumber;
+            }
+
+            if (!String.IsNullOrEmpty(lastNumber))
+            {
+                if (!(DateTime.UtcNow.Year > int.Parse(lastNumber.Split('-')[0])))
+                {
+                    number = int.Parse(lastNumber.Split('-')[1]);
+                    number++;
+                }
+
+            }
+            return $"{DateTime.UtcNow.Year}-{number}";
+
         }
+
+
         /// <summary>
         /// For Get Jobs in sort 
         /// </summary>
@@ -68,7 +84,7 @@ namespace WorkManagementTool.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                if (model.Fillters.JobTypeId <= 0 || model.Fillters.JobTypeId > 31)
+                if (model.Fillters.JobTypeId <= 0 || model.Fillters.JobTypeId > 34)
                 {
                     return BadRequest(ModelState);
                 }
@@ -79,12 +95,7 @@ namespace WorkManagementTool.Controllers
                 {
                     query = query.Where(x => x.DepartmentId == model.Fillters.DepartmentId.Value);
                 }
-
-                if (!string.IsNullOrEmpty(model.Fillters.SerialNumber))
-                {
-                    query = query.Where(x => x.SerialNumber == model.Fillters.SerialNumber);
-                }
-
+                
                 if (model.Fillters.DeletedDate.HasValue)
                 {
                     query = query.Where(x => x.DeletedDate == model.Fillters.DeletedDate.Value);
@@ -158,20 +169,16 @@ namespace WorkManagementTool.Controllers
         [HttpPost("Create")]
         public async Task<ActionResult<Journal>> AddJob(AddOrUpdateJobModel model)
         {
-
             try
             {
-
                 if (model.JobTypeId == null && model.JobDate == null
                     && model.Notes == null && model.WorkLocationId == null)
                 {
                     return BadRequest();
                 }
 
-
                 var journalRow = new Journal()
                 {
-                    SerialNumber = GetSerialNumber(),
                     UserId = model.UserId,
                     DepartmentId = model.DepartmentId,
                     JobStatus = "Created",
@@ -182,23 +189,55 @@ namespace WorkManagementTool.Controllers
                     CreateDate = DateTime.UtcNow,
                     ArchivedDate = DateTime.UtcNow.AddDays(_configs.ArchivedDate)
                 };
+
+                string SerialNumber = await GetSerialNumber();
+                int number = int.Parse(SerialNumber.Split('-')[1]);
+
+                var saved = false;
+                while (!saved)
+                {
+                    try
+                    {
+                        journalRow.SerialNumber = SerialNumber;
+                        saved = true;
+                        await _context.Journal.AddAsync(journalRow);
+                        await _context.SaveChangesAsync();
+
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.InnerException?.Message.Contains("uidx_pid") == true)
+                            SerialNumber = $"{DateTime.Now.Year}-{++number}";
+                        continue;
+
+                        throw ex;
+                    }
+                }
+                var journalHistory = new JournalAllHistory();
+
+                journalHistory.JournalId = journalRow.Id;
+                journalHistory.UserId = journalRow.UserId;
+                journalHistory.SerialNumber = journalRow.SerialNumber;
+                journalHistory.DepartmentId = journalRow.DepartmentId;
+                journalHistory.JobStatus = journalRow.JobStatus;
+                journalHistory.JobDate = journalRow.JobDate;
+                journalHistory.WorkLocationId = journalRow.WorkLocationId;
+                journalHistory.Notes = journalRow.Notes;
+                journalHistory.CreateDate = (DateTime)journalRow.CreateDate;
+                journalHistory.ArchivedDate = journalRow.ArchivedDate;
+                journalHistory.DeletedDate = journalRow.DeletedDate;
+
+                await _context.JournalAllHistory.AddAsync(journalHistory);
+                await _context.SaveChangesAsync();
               
-                await _context.Journal.AddAsync(journalRow);
-                await _context.SaveChangesAsync();
-                var historyProcedure = _context.JournalAllHistory.
-                    FromSqlRaw<JournalAllHistory>($"  INSERT INTO JournalAllHistory(JournalId,SerialNumber,JobDate," +
-                    $" DepartmentId,UserId ,WorkLocationId ,JobTypeId ,Notes ,CreateDate ,LastUpdateDate ," +
-                    $"DeletedDate, ArchivedDate , JobStatus)" +
-                    $" SELECT *  FROM Journal WHERE Id = {journalRow.Id}").ToListAsync();
-                await _context.SaveChangesAsync();
-
-
                 return CreatedAtAction(nameof(GetJob), new { id = journalRow.Id }, (journalRow));
             }
             catch
             {
                 return BadRequest();
             }
+
+
         }
         /// <summary>
         /// This Method <c> PutJob </c> For Update Job .
@@ -219,7 +258,6 @@ namespace WorkManagementTool.Controllers
                     return BadRequest();
                 }
 
-
                 var journal = await _context.Journal.FindAsync(id);
                 if (journal == null)
                 {
@@ -230,20 +268,49 @@ namespace WorkManagementTool.Controllers
                     return BadRequest();
                 }
 
-                journal.JobStatus = "Updated";
-                journal.JobDate = model.JobDate;
-                journal.WorkLocationId = model.WorkLocationId;
-                journal.JobTypeId = model.JobTypeId;
-                journal.Notes = model.Notes;
+                if (model.JobDate != null)
+                {
+                    journal.JobDate = model.JobDate;
+                }
 
+                if (model.WorkLocationId != null)
+                {
+                    journal.WorkLocationId = model.WorkLocationId;
+                }
+
+                if (model.JobTypeId != null)
+                {
+                    journal.JobTypeId = model.JobTypeId;
+                }
+
+                if (model.Notes != null)
+                {
+                    journal.Notes = model.Notes;
+                }
+
+                journal.JobStatus = "Updated";
                 journal.LastUpdateDate = DateTime.UtcNow;
+
                 await _context.SaveChangesAsync();
-                var historyProcedure = _context.JournalAllHistory.
-                   FromSqlRaw<JournalAllHistory>($"  INSERT INTO JournalAllHistory(JournalId,SerialNumber,JobDate," +
-                   $" DepartmentId,UserId ,WorkLocationId ,JobTypeId ,Notes ,CreateDate ,LastUpdateDate ," +
-                   $"DeletedDate, ArchivedDate , JobStatus)" +
-                   $" SELECT *  FROM Journal WHERE Id = {journal.Id}").ToListAsync();
+
+                var journalHistory = new JournalAllHistory();
+
+                journalHistory.JournalId = journal.Id;
+                journalHistory.UserId = journal.UserId;
+                journalHistory.SerialNumber = journal.SerialNumber;
+                journalHistory.DepartmentId = journal.DepartmentId;
+                journalHistory.JobStatus = journal.JobStatus;
+                journalHistory.JobDate = journal.JobDate;
+                journalHistory.WorkLocationId = journal.WorkLocationId;
+                journalHistory.Notes = journal.Notes;
+                journalHistory.CreateDate = (DateTime)journal.CreateDate;
+                journalHistory.ArchivedDate = journal.ArchivedDate;
+                journalHistory.DeletedDate = journal.DeletedDate;
+                journalHistory.LastUpdateDate = journal.LastUpdateDate;
+
+                await _context.JournalAllHistory.AddAsync(journalHistory);
                 await _context.SaveChangesAsync();
+
 
                 return NoContent();
             }
@@ -274,17 +341,29 @@ namespace WorkManagementTool.Controllers
             }
             job.JobStatus = "Deleted";
             job.DeletedDate = DateTime.UtcNow;
+            job.LastUpdateDate = DateTime.UtcNow;
 
-          
+
             await _context.SaveChangesAsync();
 
-            var historyProcedure = _context.JournalAllHistory.
-                    FromSqlRaw<JournalAllHistory>($"  INSERT INTO JournalAllHistory(JournalId,SerialNumber,JobDate," +
-                    $" DepartmentId,UserId ,WorkLocationId ,JobTypeId ,Notes ,CreateDate ,LastUpdateDate ," +
-                    $"DeletedDate, ArchivedDate , JobStatus)" +
-                    $" SELECT *  FROM Journal WHERE Id = {id}").ToListAsync();
-            await _context.SaveChangesAsync();
+            var journalHistory = new JournalAllHistory();
 
+
+            journalHistory.JournalId = job.Id;
+            journalHistory.UserId = job.UserId;
+            journalHistory.SerialNumber = job.SerialNumber;
+            journalHistory.DepartmentId = job.DepartmentId;
+            journalHistory.JobStatus = job.JobStatus;
+            journalHistory.JobDate = job.JobDate;
+            journalHistory.WorkLocationId = job.WorkLocationId;
+            journalHistory.Notes = job.Notes;
+            journalHistory.CreateDate = (DateTime)job.CreateDate;
+            journalHistory.ArchivedDate = job.ArchivedDate;
+            journalHistory.LastUpdateDate = (DateTime)job.LastUpdateDate;
+            journalHistory.DeletedDate = job.DeletedDate;
+
+            await  _context.JournalAllHistory.AddAsync(journalHistory);
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -308,16 +387,32 @@ namespace WorkManagementTool.Controllers
             {
                 return BadRequest();
             }
+            if (job.DeletedDate == null)
+            {
+                return BadRequest();
+            }
             job.JobStatus = "Recovery";
             job.DeletedDate = null;
+            job.LastUpdateDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            var historyProcedure = _context.JournalAllHistory.
-                   FromSqlRaw<JournalAllHistory>($"  INSERT INTO JournalAllHistory(JournalId,SerialNumber,JobDate," +
-                   $" DepartmentId,UserId ,WorkLocationId ,JobTypeId ,Notes ,CreateDate ,LastUpdateDate ," +
-                   $"DeletedDate, ArchivedDate , JobStatus)" +
-                   $" SELECT *  FROM Journal WHERE Id = {id}").ToListAsync();
+            var journalHistory = new JournalAllHistory();
+
+            journalHistory.JournalId = job.Id;
+            journalHistory.UserId = job.UserId;
+            journalHistory.SerialNumber = job.SerialNumber;
+            journalHistory.DepartmentId = job.DepartmentId;
+            journalHistory.JobStatus = job.JobStatus;
+            journalHistory.JobDate = job.JobDate;
+            journalHistory.WorkLocationId = job.WorkLocationId;
+            journalHistory.Notes = job.Notes;
+            journalHistory.CreateDate = (DateTime)job.CreateDate;
+            journalHistory.ArchivedDate = job.ArchivedDate;
+            journalHistory.LastUpdateDate = (DateTime)job.LastUpdateDate;
+            journalHistory.DeletedDate = job.DeletedDate;
+
+            await _context.JournalAllHistory.AddAsync(journalHistory);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -326,30 +421,39 @@ namespace WorkManagementTool.Controllers
         /// <summary>
         /// This Method <c> GetDetailedView </c> For History by Detailed .
         /// </summary>
-        /// <param name="id"></param>
         /// <returns> Detailed View For All changes in this Journal row by Id </returns>
         /// 
         [HttpGet("Get Detailed view/{id}")]
-        public async Task<ActionResult<Journal>> GetDetailedView(int id)
+        public async Task<ActionResult<ResponseDetailesView>> GetDetailedView(int id)
         {
             try
             {
-                var journal = await _context.JournalAllHistory
-                .OrderByDescending(x => x.Id == id).
-                Where(x => x.JournalId == id).ToListAsync();
-
-                if (journal == null)
+                if (id < 0 || id > int.MaxValue)
                 {
-                    return NotFound();
+                    return BadRequest();
+                }
+                else
+                {
+                    var job = await _context.JournalAllHistory.Where(x => x.JournalId == id).FirstAsync();
+                    if (job == null)
+                    {
+                        return NotFound();
+                    }
                 }
 
-                return Ok(journal);
+                var jobDetailed = await _context.ResponseModelDetailesViews
+                    .FromSqlRaw($" Exec DetectJobChanges @JobId = {id}").ToListAsync();
+
+                return new ResponseDetailesView()
+                {
+                    detailesViews = jobDetailed
+                };
             }
             catch (Exception)
             {
+                return BadRequest();
                 throw;
             }
-
         }
         /// <summary>
         /// This Method <c> GetHistoryJobs </c> For History by Filtring .
@@ -362,34 +466,29 @@ namespace WorkManagementTool.Controllers
         {
             try
             {
-                if (model != null)
+                var query = _context.JournalAllHistory.Where(x =>
+                (model.Fillters.DepartmentId != null ? model.Fillters.DepartmentId.Value == x.DepartmentId : true));
+        
+
+                if (model.Fillters.StartDate != null && model.Fillters.EndDate != null)
                 {
-
-                    var query = _context.JournalAllHistory.Where(x =>
-                    (model.Fillters.DepartmentId != null ? model.Fillters.DepartmentId.Value == x.DepartmentId : true)
-                    && (!string.IsNullOrEmpty(model.Fillters.SerialNumber) ? model.Fillters.SerialNumber == x.SerialNumber : true));
-
-                    if (model.Fillters.StartDate != null && model.Fillters.EndDate != null)
-                    {
-                        query = query.Where(x =>
-                            model.Fillters.StartDate <= x.CreateDate
-                            && model.Fillters.EndDate >= x.CreateDate);
-                    }
-
-                    var count = await query.CountAsync();
-
-                    var jobs = await query.OrderByDescending(x => x.Id)
-                                           .Skip(model.Pagination.Limit!.Value * (model.Pagination.Page!.Value - 1))
-                                           .Take(model.Pagination.Limit!.Value)
-                                           .ToListAsync();
-
-                    return new ResponseAllHistoryJobsModel
-                    {
-                        Count = count,
-                        Jobs = jobs
-                    };
+                    query = query.Where(x =>
+                        model.Fillters.StartDate <= x.CreateDate
+                        && model.Fillters.EndDate >= x.CreateDate);
                 }
-                return NotFound();
+
+                var count = await query.CountAsync();
+
+                var jobs = await query.OrderByDescending(x => x.Id)
+                                       .Skip(model.Pagination.Limit!.Value * (model.Pagination.Page!.Value - 1))
+                                       .Take(model.Pagination.Limit!.Value)
+                                       .ToListAsync();
+
+                return new ResponseAllHistoryJobsModel()
+                {
+                    Jobs = jobs,
+                    Count = count,
+                };
             }
             catch
             {

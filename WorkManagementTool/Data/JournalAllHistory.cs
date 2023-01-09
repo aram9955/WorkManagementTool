@@ -7,20 +7,20 @@ namespace WorkManagementTool.Data
     {
         /// <summary>
         /// <param name="Id"> Primary Key Id 
-        /// </summary>
+        /// <summary>
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         /// <summary>
         /// JournalId Foreign key in Journal table Id .
-        /// </summary>
+        /// <summary>
         [ForeignKey("Journal")]
         [Required]
         public int JournalId { get; set; }
 
         /// <summary>
         /// <param name="SerialNumber"> this param Unique 
-        /// </summary>
+        /// <summary>
         [Required]
         [MaxLength(16)]
         public string? SerialNumber { get; set; }
@@ -30,32 +30,32 @@ namespace WorkManagementTool.Data
 
         /// <summary>
         /// DepartmentId Foreign key in Department table Id .
-        /// </summary>
+        /// <summary>
         [ForeignKey("Department")]
         [Required]
         public int DepartmentId { get; set; }
 
         /// <summary>
         /// <param name=" UserId "> This param Is UniqueIdentifier
-        /// </summary>
+        /// <summary>
         [Required]
         public Guid UserId { get; set; }
 
         /// <summary>
         /// WorkLocationId Foreign key in WorkLocation table Id .
-        /// </summary>
+        /// <summary>
         [ForeignKey("WorkLocation")]
         public int? WorkLocationId { get; set; }
 
         /// <summary>
         /// JobTypeId Foreign key in JobTypes table Id .
-        /// </summary>
+        /// <summary>
         [ForeignKey("JobType")]
         public int? JobTypeId { get; set; }
 
         /// <summary>
         /// Max Lenght 1024 char .
-        /// </summary>
+        /// <summary>
         [MaxLength(1024)]
         public string? Notes { get; set; }
 

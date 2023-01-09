@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-namespace WorkManagementTool.Models
+
+namespace WorkManagementTool.Models.JournalModels
 {
     /// <summary>
     /// This Class <c> RequestJobsModel </c>For Fillter And Request parametrs
@@ -21,11 +22,10 @@ namespace WorkManagementTool.Models
         public Guid? UserId { get; set; }
         [Range(1, 81, ErrorMessage = "Please enter valid WorkLocation")]
         public int? WorkLocationId { get; set; }
-        [Range(1, 31, ErrorMessage = "Please enter valid JobType")]
+        [Range(1, 34, ErrorMessage = "Please enter valid JobType")]
         public int? JobTypeId { get; set; }
         [Required]
         public bool IsTrash { get; set; }
-        public string? SerialNumber { get; set; }
         public DateTime? DeletedDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }

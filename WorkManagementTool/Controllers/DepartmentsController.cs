@@ -51,11 +51,10 @@ namespace WorkManagementTool.Controllers
             try
             {
                 var jobTypes = await _context.JobTypes.Where(x => x.DepartmentId == departmentId).ToListAsync();
-                if (jobTypes?.Count > 0)
+                if (jobTypes?.Count > 0 )
                 {
                     return jobTypes;
                 }
-
                 return NotFound();
             }
             catch

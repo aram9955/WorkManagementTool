@@ -1,8 +1,9 @@
 ﻿using WorkManagementTool.Data;
-namespace WorkManagementTool.Models
+
+namespace WorkManagementTool.Models.JournalModels
 {
     /// <summary>
-    /// This Class <c> ResponseJobsModel </c>For Responce jobs and jobs Count . 
+    /// This Class <c> ResponseJobsModel </c>For Response jobs and jobs Count . 
     /// </summary>
     public class ResponseJobsModel
     {

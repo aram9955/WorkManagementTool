@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-namespace WorkManagementTool.Models
+
+namespace WorkManagementTool.Models.JournalModels
 {
     /// <summary>
     /// This Class <c> RequestAllHistoryJobsModel </c> For Fillter And Request parametrs
@@ -18,7 +19,6 @@ namespace WorkManagementTool.Models
         [Range(1, 4, ErrorMessage = "Please enter valid Department")]
         public int? DepartmentId { get; set; }
         public Guid? UserId { get; set; }
-        public string? SerialNumber { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
     }

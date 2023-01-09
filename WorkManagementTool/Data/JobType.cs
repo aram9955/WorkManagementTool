@@ -1,6 +1,4 @@
-﻿using MessagePack;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WorkManagementTool.Data
 {
@@ -9,10 +7,20 @@ namespace WorkManagementTool.Data
     /// </summary>
     public class JobType
     {
+        /// <summary>
+        /// Types id
+        /// </summary>
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+        /// <summary>
+        /// typeId by department
+        /// </summary>
         [ForeignKey("Department")]
         public int DepartmentId { get; set; }
+
+        /// <summary>
+        /// JobType Name
+        /// </summary>
         public string Name { get; set; }
     }
 }

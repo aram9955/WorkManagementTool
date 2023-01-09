@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-namespace WorkManagementTool.Models
+
+namespace WorkManagementTool.Models.JournalModels
 {
     /// <summary>
     /// This class <c> AddOrUpdateJobModel </c> pass parameters to Journal for Add and Update.
@@ -24,7 +25,7 @@ namespace WorkManagementTool.Models
         /// <summary>
         /// Start is 1 to 34 . 
         /// </summary>
-        [Range(1, 31, ErrorMessage = "Please enter valid JobType")]
+        [Range(1, 34, ErrorMessage = "Please enter valid JobType")]
         public int? JobTypeId { get; set; }
         /// <summary>
         /// Max Lenght 1024 char .
