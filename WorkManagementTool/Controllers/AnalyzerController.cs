@@ -2,11 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using WorkManagementTool.Data;
 using WorkManagementTool.Models;
+using WorkManagementTool.Models.ResponseAnalyzerModels;
 
 namespace WorkManagementTool.Controllers
 {
     public class AnalyzerController : Controller
     {
+        public async Task<int> GetAnalyticFormulaByPercent()
+        {
+            return await GetAnalyticFormulaByPercent();
+        }
+
         /// <summary>
         /// This Field constant precent 100%;
         /// </summary>
@@ -14,6 +20,7 @@ namespace WorkManagementTool.Controllers
         /// <summary>
         /// For sum the count of analytic.
         /// </summary>
+        public List<int> AllCount { get; set; } = new();
 
         private readonly WorkManagementToolContext _context;
 
@@ -62,8 +69,28 @@ namespace WorkManagementTool.Controllers
                 }
                 if (model.UserId.Count > 1)
                 {
+                    foreach (var item in model.UserId)
+                    {
+                        var query = _context.Journal.Where(x => x.UserId == item);
 
+                        if (model.Archived.Equals(false))
+                        {
+                            query = query.Where(x => x.ArchivedDate >= DateTime.UtcNow);
+                        }
+                        if (model.IsTrash.Equals(false))
+                        {
+                            query = query.Where(x => x.DeletedDate == null);
+                        }
+                        var count = query.CountAsync();
+
+                        if (count != null && count.Result != 0)
+                            AllCount.Add(await count);
+                        else continue;
+
+                    }
+                    return Ok(AllCount);
                 }
+                
                 return BadRequest();
             }
             catch (Exception ex)
@@ -112,7 +139,26 @@ namespace WorkManagementTool.Controllers
                 }
                 if (model.WorklocationId.Count > 1)
                 {
+                    foreach (var item in model.WorklocationId)
+                    {
+                        var query = _context.Journal.Where(x => x.WorkLocationId == item);
 
+                        if (model.Archived.Equals(false))
+                        {
+                            query = query.Where(x => x.ArchivedDate >= DateTime.UtcNow);
+                        }
+                        if (model.IsTrash.Equals(false))
+                        {
+                            query = query.Where(x => x.DeletedDate == null);
+                        }
+                        var count = query.CountAsync();
+
+                        if (count != null && count.Result != 0)
+                            AllCount.Add(await count);
+                        else continue;
+
+                    }
+                    return Ok(AllCount);
                 }
                 return BadRequest();
             }
@@ -160,9 +206,29 @@ namespace WorkManagementTool.Controllers
                         return Ok(percentformula * count);
                     }
                 }
+
                 if (model.DepartmentId.Count > 1)
                 {
+                    foreach (var item in model.DepartmentId)
+                    {
+                        var query = _context.Journal.Where(x => x.DepartmentId == item);
 
+                        if (model.Archived.Equals(false))
+                        {
+                            query = query.Where(x => x.ArchivedDate >= DateTime.UtcNow);
+                        }
+                        if (model.IsTrash.Equals(false))
+                        {
+                            query = query.Where(x => x.DeletedDate == null);
+                        }
+                        var count = query.CountAsync();
+
+                        if (count != null && count.Result != 0)
+                            AllCount.Add(await count);
+                        else continue;
+
+                    }
+                    return Ok(AllCount);
                 }
                 return BadRequest();
             }
@@ -178,7 +244,7 @@ namespace WorkManagementTool.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [HttpGet("AnalyticsByJobTypes")]
-        public async Task<ActionResult<Journal>> AnalyticsAsyncJobTypeId(RequestModelAnalyzerJobTypes model)
+        public async Task<ActionResult<ResponseAnalyzerModelJobTypes>> AnalyticsAsyncJobTypeId(RequestModelAnalyzerJobTypes model)
         {
             try
             {
@@ -210,6 +276,7 @@ namespace WorkManagementTool.Controllers
                         return Ok(percentformula * count);
                     }
                 }
+
                 if (model.JobTypeId.Count > 1)
                 {
                     foreach (var item in model.JobTypeId)
@@ -224,11 +291,14 @@ namespace WorkManagementTool.Controllers
                         {
                             query = query.Where(x => x.DeletedDate == null);
                         }
+                        var count = query.CountAsync();
 
-
+                        if (count != null && count.Result != 0)
+                            AllCount.Add(await count);
+                        else continue;
+                       
                     }
-
-
+                    return Ok(AllCount);
                 }
                 return BadRequest();
             }
