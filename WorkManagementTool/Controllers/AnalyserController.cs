@@ -7,8 +7,14 @@ using WorkManagementTool.Models.ResponseAnalyzerModels;
 
 namespace WorkManagementTool.Controllers
 {
+    /// <summary>
+    /// This Controller For Analytics in different types.
+    /// </summary>
     public class AnalyserController : Controller
     {
+        /// <summary>
+        /// AnalyserByPercent 
+        /// </summary>
         public List<double> AnalyserByPercent { get; set; } = new();
 
         /// <summary>
@@ -22,10 +28,15 @@ namespace WorkManagementTool.Controllers
 
         private readonly WorkManagementToolContext _context;
 
+        /// <summary>
+        /// This is Constructor , Dependency injection .
+        /// </summary>
+        /// <param name="context"></param>
         public AnalyserController(WorkManagementToolContext context)
         {
             _context = context;
         }
+
         /// <summary>
         /// This <c>AnalyticsAsyncByFilter </c> for the analytics by Fillter
         /// </summary>
@@ -159,17 +170,17 @@ namespace WorkManagementTool.Controllers
      
         }
         
-            /// <summary>
-            /// This <c>AnalyticsAsyncUserId </c> for the analytics by UserId
-            /// </summary>
-            /// <param name="model"></param>
-            /// <returns></returns>
-         [HttpGet("AnalyticsByUsers")]
+        /// <summary>
+        /// This <c>AnalyticsAsyncUserId </c> for the analytics by UserId
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [HttpGet("AnalyticsByUsers")]
         public async Task<ActionResult<ResponseAnalyserModel>> AnalyticsAsyncUserId(RequestModelAnalyserUserId model)
         {
             try
             {
-                if (model.Equals(null) && model.UserId.Count == 0)
+                if (model.UserId.Count == 0)
                 {
                     return BadRequest();
                 }
@@ -259,6 +270,7 @@ namespace WorkManagementTool.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
         /// <summary>
         /// This <c>AnalyticsAsyncWorkLocationId </c> for the analytics by WorkLocationId
         /// </summary>
@@ -269,7 +281,7 @@ namespace WorkManagementTool.Controllers
         {
             try
             {
-                if (model.Equals(null) && model.WorkLocationId.Count == 0)
+                if (model.WorkLocationId.Count == 0)
                 {
                     return BadRequest();
                 }
@@ -358,6 +370,7 @@ namespace WorkManagementTool.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
         /// <summary>
         /// This <c>AnalyticsAsyncDepartmentId </c> for the analytics by DepartmentId
         /// </summary>
@@ -369,7 +382,7 @@ namespace WorkManagementTool.Controllers
             try
             {
 
-                if (model.Equals(null) && model.DepartmentId.Count == 0)
+                if (model.DepartmentId.Count == 0)
                 {
                     return BadRequest();
                 }
@@ -467,7 +480,7 @@ namespace WorkManagementTool.Controllers
         {
             try
             {
-                if (model.Equals(null) && model.JobTypeId.Count == 0)
+                if (model.JobTypeId.Count == 0)
                 {
                     return BadRequest();
                 }
