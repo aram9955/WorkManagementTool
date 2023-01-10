@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/WorkManagementTool/Controllers/AnalyzerController.cs
+/WorkManagementTool/Controllers/AnalyzerController.cs
+/WorkManagementTool/Controllers/AnalyzerController.cs
+/WorkManagementTool/Models/RequestAnalyzerModels/RequestModelAnalyzerDepartmentId.cs
