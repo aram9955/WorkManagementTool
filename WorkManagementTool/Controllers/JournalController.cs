@@ -4,6 +4,8 @@ using WorkManagementTool.Data;
 using Microsoft.Extensions.Options;
 using WorkManagementTool.Models.Configs;
 using WorkManagementTool.Models.JournalModels;
+using IronPdf;
+using IronPdf.Engines.Chrome;
 
 namespace WorkManagementTool.Controllers
 {
@@ -31,10 +33,6 @@ namespace WorkManagementTool.Controllers
             _context = context;
             _configs = configs.Value;
         }
-        /// <summary>
-        /// Generation for SerialNumber . 
-        /// </summary>
-        //private static readonly Dictionary<int, int> SerialNumber = new Dictionary<int, int>();
 
         /// <summary>
         /// This Method <c> GetSerialNumber </c> For SerialNumber temporary Value.
@@ -63,6 +61,58 @@ namespace WorkManagementTool.Controllers
             return $"{DateTime.UtcNow.Year}-{number}";
 
         }
+
+        [HttpGet("GetPDF")]
+        public async Task<ActionResult<Journal>> GetJobPDF(int id)
+        {
+            try
+            {
+                var journal = await _context.Journal.FindAsync(id);
+
+                if (journal != null)
+                {
+                    string path = @"C:\\Users\\HP\\source\\repos\\WorkManagementTool\\WorkManagementTool\\PDF Files\\content.pdf";
+                    var renderer = new ChromePdfRenderer();
+                    // Many rendering options to use to customize!
+                    renderer.RenderingOptions.SetCustomPaperSizeInInches(10f, 10f);
+                    renderer.RenderingOptions.PrintHtmlBackgrounds = true;
+                    renderer.RenderingOptions.PaperOrientation = IronPdf.Rendering.PdfPaperOrientation.Landscape;
+                    renderer.RenderingOptions.Title = "Jobs in PDF ";
+                    renderer.RenderingOptions.EnableJavaScript = true;
+                    renderer.RenderingOptions.RenderDelay = 50; // in milliseconds
+                    renderer.RenderingOptions.FitToPaperMode = FitToPaperModes.Zoom;
+                    renderer.RenderingOptions.Zoom = 100;
+                    renderer.RenderingOptions.CreatePdfFormsFromHtml = true;
+                    // Supports margin customization!
+                    renderer.RenderingOptions.MarginTop = 40; //millimeters
+                    renderer.RenderingOptions.MarginLeft = 20; //millimeters
+                    renderer.RenderingOptions.MarginRight = 20; //millimeters
+                    renderer.RenderingOptions.MarginBottom = 40; //millimeters
+                                                                 // Can set FirstPageNumber if you have a cover page
+                    renderer.RenderingOptions.FirstPageNumber = 1; // use 2 if a cover page will be appended
+                                                                   // Settings have been set, we can render:
+                    renderer.RenderHtmlAsPdf($"<h2> <strong> JobStatus -- <strong>{journal.JobStatus}</h2>" +
+                        $" <h2><strong> SerialNumber -- <strong>{journal.SerialNumber}</h2>         <h2><strong> JobDate -- <strong>{journal.JobDate}        </h2>  " +
+                        $" <h2><strong> DepartmentId -- <strong>{journal.DepartmentId}</h2>         <h2><strong> UserId -- <strong>{journal.UserId}          </h2>  " +
+                        $" <h2><strong> WorkLocationId -- <strong>{journal.WorkLocationId}</h2>     <h2><strong> JobTypeId -- <strong>{journal.JobTypeId}    </h2>  " +
+                        $" <h2><strong> Notes -- <strong>{journal.Notes}</h2>                       <h2><strong> CreateDate -- <strong>{journal.CreateDate}  </h2>  " +
+                        $" <h2><strong> ArchivedDate -- <strong>{journal.ArchivedDate} </h2>        <h2><strong> DeletedDate -- <strong>{journal.DeletedDate}</h2>  " +
+                        $" <h2><strong> LastUpdateDate  --  <strong>{journal.LastUpdateDate}</h2>")
+
+
+                        .SaveAs(@"C:\\Users\\HP\\source\\repos\\WorkManagementTool\\WorkManagementTool\\PDF Files\\content.pdf");
+                    return Ok(path);
+                }
+
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+                throw;
+            }
+        }
+
 
 
         /// <summary>
@@ -95,7 +145,7 @@ namespace WorkManagementTool.Controllers
                 {
                     query = query.Where(x => x.DepartmentId == model.Fillters.DepartmentId.Value);
                 }
-                
+
                 if (model.Fillters.DeletedDate.HasValue)
                 {
                     query = query.Where(x => x.DeletedDate == model.Fillters.DeletedDate.Value);
@@ -159,6 +209,8 @@ namespace WorkManagementTool.Controllers
             {
                 return NotFound();
             }
+
+
             return Ok(journal);
         }
         /// <summary>
@@ -229,7 +281,7 @@ namespace WorkManagementTool.Controllers
 
                 await _context.JournalAllHistory.AddAsync(journalHistory);
                 await _context.SaveChangesAsync();
-              
+
                 return CreatedAtAction(nameof(GetJob), new { id = journalRow.Id }, (journalRow));
             }
             catch
@@ -362,7 +414,7 @@ namespace WorkManagementTool.Controllers
             journalHistory.LastUpdateDate = (DateTime)job.LastUpdateDate;
             journalHistory.DeletedDate = job.DeletedDate;
 
-            await  _context.JournalAllHistory.AddAsync(journalHistory);
+            await _context.JournalAllHistory.AddAsync(journalHistory);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -468,7 +520,7 @@ namespace WorkManagementTool.Controllers
             {
                 var query = _context.JournalAllHistory.Where(x =>
                 (model.Fillters.DepartmentId != null ? model.Fillters.DepartmentId.Value == x.DepartmentId : true));
-        
+
 
                 if (model.Fillters.StartDate != null && model.Fillters.EndDate != null)
                 {
